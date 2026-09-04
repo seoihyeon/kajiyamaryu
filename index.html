@@ -194,8 +194,10 @@ input[type=color]{width:100%;height:30px;padding:2px;border:1px solid var(--bd);
 .np .t1,.np .t2,.np .t3{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .np .bot{flex:0 0 auto;padding-top:.3em}
 .np .times{display:flex;justify-content:space-between;font-size:.82em;color:#3f4a5c;margin-bottom:.18em}
-.np .bar{height:.42em;border:1px solid #8b95a6;border-radius:.25em;background:#eef1f5;overflow:hidden}
-.np .bar i{display:block;height:100%;background:linear-gradient(#9fb9e2,#5b82c4)}
+/* min-height: 기기를 많이 축소했을 때 높이가 1px 미만이 되면
+   PNG 저장(html2canvas)이 그라데이션을 그리다 오류를 냄 — 최소 1px 보장 */
+.np .bar{height:.42em;min-height:2px;border:1px solid #8b95a6;border-radius:.25em;background:#eef1f5;overflow:hidden}
+.np .bar i{display:block;height:100%;min-height:1px;background:linear-gradient(#9fb9e2,#5b82c4)}
 
 /* 메뉴 */
 .mwrap{flex:1;min-height:0;display:flex}
@@ -269,10 +271,8 @@ input[type=color]{width:100%;height:30px;padding:2px;border:1px solid var(--bd);
     box-shadow:0 3px 10px rgba(20,22,30,.08);
   }
   .stagewrap.transparent-bg{background-color:#fff}
-  /* 데스크톱에선 정사각형 박스(#stage) 안에 기기를 끼워 넣지만, 기기 자체는 세로로 긴 비율이라
-     모바일에서 폭 기준 정사각형으로 억지로 눌러버리면(overflow:hidden) 위아래가 잘려서 안 보였음.
-     그래서 모바일에서는 정사각형 강제를 풀고, 내용물 높이에 맞춰 자연스럽게 늘어나게 함 */
-  #stage{width:auto;max-width:100%;aspect-ratio:auto;overflow:visible}
+  /* #stage(배경 캔버스)의 실제 크기는 JS에서 "배경 비율 + 배경 여백"으로 계산해
+     화면에 맞게 축소까지 해서 넣어 줌 (미리보기와 저장 결과가 항상 같도록) */
   .stagenote{margin:8px 0 0}
 }
 </style>
@@ -420,6 +420,24 @@ input[type=color]{width:100%;height:30px;padding:2px;border:1px solid var(--bd);
         </div>
         <div class="f" id="bgImgWrap"><input class="file" type="file" id="bgFile" accept="image/*"></div>
         <p class="hint" id="bgNoneHint" style="display:none">배경 없이 기기만 투명 PNG로 저장됩니다.</p>
+
+        <div class="f">
+          <label>배경 비율</label>
+          <div class="chips" id="bgRatioChips">
+            <button class="chip" data-ratio="1:1">1:1</button>
+            <button class="chip" data-ratio="4:5">4:5</button>
+            <button class="chip" data-ratio="3:4">3:4</button>
+            <button class="chip" data-ratio="16:9">16:9</button>
+            <button class="chip" data-ratio="9:16">9:16</button>
+            <button class="chip" data-ratio="auto">자동</button>
+          </div>
+          <p class="hint">‘자동’은 기기 크기에 딱 맞춰 배경을 잘라냅니다.</p>
+        </div>
+        <div class="f">
+          <label>배경 여백 <b id="bgPadV">24%</b></label>
+          <input type="range" id="bgPad" min="0" max="120" value="24">
+        </div>
+
         <label class="ck"><input type="checkbox" id="shadow" checked> 기기 그림자</label>
       </div>
     </details>
@@ -471,6 +489,7 @@ const S = {
   listTitle:'Songs',
   menuTitle:'iPod', menuItems:MENUS.classic.slice(), menuSel:0, menuEdited:false,
   bg:{ mode:'solid', c1:'#ffffff', c2:'#e4e4e8', src:'' },
+  bgRatio:'1:1', bgPad:24,
   shadow:true,
   customColor:{ mini:null, nano:null },
   songs:[
@@ -775,7 +794,30 @@ function render(){
   else if(S.model==='classic'){ wheelCol=dark?mix(base,.10):mix(base,.06); labCol=dark?'rgba(255,255,255,.62)':'rgba(0,0,0,.36)'; hubCol=dark?mix(base,.16):mix(base,.10); }
   else { wheelCol=mix(base,dark?.10:.10); labCol=dark?'rgba(255,255,255,.72)':'rgba(0,0,0,.38)'; hubCol=mix(base,dark?.18:.16); }
 
-  const px=n=>Math.round(n*k*100)/100+'px';
+  /* ── 배경(캔버스) 크기 계산 ──
+     기기 바운딩 박스에 "배경 여백"을 더하고, 선택한 비율에 맞춰 넓힌 뒤,
+     화면(패널 제외 영역)을 넘치면 전체를 같은 비율로 축소해 미리보기와 저장 결과를 일치시킴 */
+  const caseExtra   = S.caseOn ? 19 : 0;          // 케이스 패딩(8*2)+테두리(1.5*2)
+  const shadowExtra = S.shadow ? sp.h*0.07 : 0;   // 그림자가 기기 아래로 나가는 양
+  const devBoxW = sp.w + caseExtra;
+  const devBoxH = sp.h + caseExtra + shadowExtra;
+  const padU = devBoxH * (S.bgPad/100);
+  let stW = devBoxW + padU*2, stH = devBoxH + padU*2;
+  if(S.bgRatio!=='auto'){
+    const rp=S.bgRatio.split(':').map(Number), r=rp[0]/rp[1];
+    if(stW/stH < r) stW = stH*r; else stH = stW/r;
+  }
+  let fit = 1;
+  const wrapEl = document.querySelector('.stagewrap');
+  if(wrapEl && wrapEl.clientWidth){
+    const cs = getComputedStyle(wrapEl);
+    const availW = Math.max(140, wrapEl.clientWidth - parseFloat(cs.paddingLeft||0) - parseFloat(cs.paddingRight||0));
+    const availH = Math.max(180, window.innerHeight * (window.innerWidth<=780 ? 0.52 : 0.82));
+    fit = Math.min(1, availW/(stW*k), availH/(stH*k));
+  }
+  const kk = k*fit;
+
+  const px=n=>Math.round(n*kk*100)/100+'px';
   // 화면과 휠 사이 여백 — 각인이 있으면 휠을 살짝 줄여 자리를 만든다
   let wheel=sp.wheel, hub=sp.hub;
   let gap = sp.h - sp.stop - sp.sh - sp.wbot - wheel;
@@ -853,6 +895,10 @@ function render(){
       background:radial-gradient(ellipse at 50% 50%, rgba(0,0,0,.34) 0%, rgba(0,0,0,.15) 42%, rgba(0,0,0,0) 70%);"></div>` : '';
 
   const st=$('#stage'), b=S.bg, wrap=document.querySelector('.stagewrap');
+  st.style.width  = Math.round(stW*kk)+'px';
+  st.style.height = Math.round(stH*kk)+'px';
+  st.style.aspectRatio = 'auto';
+  st.style.maxWidth = 'none';
   if(b.mode==='none'){
     st.style.background='none';
     wrap.classList.add('transparent-bg');
@@ -920,6 +966,7 @@ function paintChips(){
   $('#bgC1Label').textContent   = S.bg.mode==='solid' ? '배경색' : '색 1';
   $('#bgImgWrap').style.display = S.bg.mode==='img'?'':'none';
   $('#bgNoneHint').style.display = S.bg.mode==='none'?'block':'none';
+  document.querySelectorAll('#bgRatioChips .chip').forEach(c=>c.classList.toggle('on', c.dataset.ratio===S.bgRatio));
 }
 function paintSongs(){
   const wrap=$('#songs'); wrap.innerHTML='';
@@ -1044,6 +1091,10 @@ function bindAll(){
   $('#bgFile').onchange=e=>{ const f=e.target.files[0]; if(!f) return;
     const r=new FileReader(); r.onload=()=>{ S.bg.src=r.result; S.bg.mode='img'; paintChips(); render(); }; r.readAsDataURL(f); };
   $('#shadow').onchange=e=>{ S.shadow=e.target.checked; render(); };
+  document.querySelectorAll('#bgRatioChips .chip').forEach(c=>c.onclick=()=>{ S.bgRatio=c.dataset.ratio; paintChips(); render(); });
+  $('#bgPad').oninput=e=>{ S.bgPad=+e.target.value; $('#bgPadV').textContent=e.target.value+'%'; render(); };
+  // 창 크기가 바뀌면 배경이 화면에 맞게 다시 계산되도록
+  let rzT; window.addEventListener('resize', ()=>{ clearTimeout(rzT); rzT=setTimeout(render,120); });
 
   $('#savePng').onclick=savePng;
 }
@@ -1108,6 +1159,7 @@ function init(){
   $('#menuSel').value=S.menuSel+1;
   $('#caseOn').checked=S.caseOn;
   $('#bgC1').style.background=S.bg.c1; $('#bgC2').style.background=S.bg.c2;
+  $('#bgPad').value=S.bgPad; $('#bgPadV').textContent=S.bgPad+'%';
   syncSongFields(); paintColorSwatches(); paintChips(); bindAll(); render();
 }
 init();
