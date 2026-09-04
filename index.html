@@ -134,7 +134,7 @@ input[type=color]{width:100%;height:30px;padding:2px;border:1px solid var(--bd);
 }
 #stage{
   width:min(660px,100%);aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;
-  border-radius:16px;overflow:hidden;position:relative;
+  overflow:hidden;position:relative;
 }
 .stagenote{margin-top:12px;font-size:11px;color:var(--sub)}
 
@@ -242,6 +242,29 @@ input[type=color]{width:100%;height:30px;padding:2px;border:1px solid var(--bd);
 .lcd .mlist .it.sel .ar,.lcd .lst .it.sel .ar{color:#cfd8ce}
 .lcd .lst .it .pl{border-left-color:#1e2320}
 .lcd .lst .it.sel .pl{border-left-color:#cfd8ce}
+
+/* ── 반응형(모바일): 좌우 2단 레이아웃이 좁은 화면에서 미리보기를 거의 안 보이게 눌러버려서,
+   위아래로 쌓고 미리보기를 화면 위에 고정(sticky)해 스크롤하면서도 계속 보이게 함 ── */
+@media (max-width:780px){
+  html,body{height:auto}
+  .app{flex-direction:column;height:auto;min-height:100vh}
+  .panel{
+    width:100%;flex:0 0 auto;border-right:none;border-top:1px solid var(--bd);
+    order:2;min-height:0;
+  }
+  .pbody{overflow:visible;flex:none;padding-bottom:50px}
+  .stagewrap{
+    width:100%;flex:0 0 auto;order:1;padding:18px 14px 14px;
+    position:sticky;top:0;z-index:20;background:var(--bg);
+    box-shadow:0 3px 10px rgba(20,22,30,.08);
+  }
+  .stagewrap.transparent-bg{background-color:#fff}
+  /* 데스크톱에선 정사각형 박스(#stage) 안에 기기를 끼워 넣지만, 기기 자체는 세로로 긴 비율이라
+     모바일에서 폭 기준 정사각형으로 억지로 눌러버리면(overflow:hidden) 위아래가 잘려서 안 보였음.
+     그래서 모바일에서는 정사각형 강제를 풀고, 내용물 높이에 맞춰 자연스럽게 늘어나게 함 */
+  #stage{width:auto;max-width:100%;aspect-ratio:auto;overflow:visible}
+  .stagenote{margin:8px 0 0}
+}
 </style>
 </head>
 <body>
@@ -760,14 +783,23 @@ function render(){
   const edgeA = dark?0.10:0.34;
   const bez = 2.6;
 
+  // 좌우 가장자리 하이라이트는 예전엔 .dev 위에 겹쳐진 별도 div 2개(.edge)로 그렸는데,
+  // html2canvas로 PNG를 뽑으면 레이어 경계에 미리보기엔 없던 얇은 세로줄이 생기는 문제가 있었음.
+  // 그래서 별도 요소 없이 .dev 배경 자체에 좌우 하이라이트를 한 장의 gradient로 합쳐서 그림(레이어 경계 자체가 사라짐).
+  const edgeW = 9, edgeMid = edgeW*0.55;
+  const edgeGrad = `linear-gradient(90deg,
+      rgba(0,0,0,.09) 0%,
+      rgba(255,255,255,${edgeA}) ${edgeMid}%,
+      rgba(255,255,255,0) ${edgeW}%,
+      rgba(255,255,255,0) ${100-edgeW}%,
+      rgba(255,255,255,${edgeA}) ${100-edgeMid}%,
+      rgba(0,0,0,.09) 100%)`;
   const device = `
   <div class="dev ${sp.lcd?'lcd':''}" style="
       width:${px(sp.w)};height:${px(sp.h)};border-radius:${px(sp.r)};
-      background:linear-gradient(180deg, ${cTop} 0%, ${base} 17%, ${base} 66%, ${cBot} 100%);
+      background:${edgeGrad}, linear-gradient(180deg, ${cTop} 0%, ${base} 17%, ${base} 66%, ${cBot} 100%);
       border:1px solid rgba(0,0,0,${dark?0.55:0.20});
     ">
-    <div class="edge" style="left:0;width:9%;background:linear-gradient(90deg, rgba(0,0,0,.09), rgba(255,255,255,${edgeA}) 55%, rgba(255,255,255,0))"></div>
-    <div class="edge" style="right:0;width:9%;background:linear-gradient(270deg, rgba(0,0,0,.09), rgba(255,255,255,${edgeA}) 55%, rgba(255,255,255,0))"></div>
     <div class="bezel" style="
         left:50%;margin-left:${px(-sp.sw/2-bez)};top:${px(sp.stop-bez)};
         padding:${px(bez)};border-radius:${px(3.4)}">
