@@ -70,6 +70,16 @@ input[type=color]{width:100%;height:30px;padding:2px;border:1px solid var(--bd);
 .cpop-bottom input{flex:1;min-width:0;padding:6px 8px;border:1px solid var(--bd);border-radius:6px;
   font:inherit;font-size:12px;text-transform:uppercase;outline:none}
 .cpop-bottom input:focus{border-color:var(--acc)}
+
+/* ── 모바일 저장용 오버레이 (팝업/새 탭 없이 이 화면 안에서 이미지를 길게 눌러 저장) ── */
+.saveov{position:fixed;inset:0;z-index:2000;background:rgba(15,16,20,.72);
+  display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.saveov-in{background:#fff;border-radius:14px;padding:14px;max-width:460px;width:100%;text-align:center}
+.saveov-t{margin:2px 0 10px;font-size:12.5px;line-height:1.55;color:var(--ink)}
+.saveov-t b{color:var(--acc)}
+.saveov img{max-width:100%;display:block;margin:0 auto;border-radius:6px}
+.saveov-x{margin-top:12px;width:100%;padding:11px;border:none;border-radius:9px;
+  background:var(--ink);color:#fff;font:inherit;font-weight:600;font-size:13px;cursor:pointer}
 .row2{display:flex;gap:8px}.row2>*{flex:1;min-width:0}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{
@@ -1037,6 +1047,22 @@ function bindAll(){
 
   $('#savePng').onclick=savePng;
 }
+/* 모바일: 새 창/팝업 없이 페이지 안에 결과 이미지를 띄워 길게 눌러 저장하게 함 */
+function showSaveOverlay(dataUrl, filename){
+  const prev = document.querySelector('.saveov');
+  if(prev) prev.remove();
+  const ov = document.createElement('div');
+  ov.className = 'saveov';
+  ov.innerHTML = `
+    <div class="saveov-in">
+      <p class="saveov-t">아래 이미지를 <b>길게 눌러</b> ‘사진에 저장’을 선택해 주세요.</p>
+      <img src="${dataUrl}" alt="${esc(filename)}">
+      <button type="button" class="saveov-x">닫기</button>
+    </div>`;
+  ov.querySelector('.saveov-x').onclick = ()=> ov.remove();
+  ov.onclick = e=>{ if(e.target===ov) ov.remove(); };
+  document.body.appendChild(ov);
+}
 async function savePng(){
   if(typeof html2canvas==='undefined'){
     alert('PNG 저장 라이브러리(html2canvas)를 불러오지 못했습니다.\n인터넷 연결이나 스크립트 차단 여부를 확인해 주세요.');
@@ -1050,22 +1076,22 @@ async function savePng(){
     const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
     if(!blob) throw new Error('이미지 생성에 실패했습니다.');
 
-    // 모바일 브라우저(특히 iOS Safari)는 <a download>로 트리거하는 다운로드가
-    // 조용히 씹혀서 "저장도 안 되고 보이지도 않는" 것처럼 보이는 경우가 많음.
-    // (공유 시트는 AirDrop·메시지 등 불필요한 옵션까지 다 뜨는 게 오히려 낯설고 번거롭다는
-    // 피드백을 받아서 뺐음 — 대신 이미지를 새 탭에 바로 열어 길게 눌러 저장하는 익숙한 방식으로 통일)
-    const url = URL.createObjectURL(blob);
+    // 모바일 브라우저(특히 iOS Safari)에서는
+    //  · <a download> → 조용히 무시돼서 아무 일도 안 일어남
+    //  · 공유 시트 → AirDrop·메시지까지 다 뜨는 게 낯설고 번거로움
+    //  · window.open + blob URL → 팝업 차단 경고가 뜨고, 허용해도 새 탭이 빈 화면으로 뜸
+    // 그래서 새 창을 아예 열지 않고, 이 페이지 안에 결과 이미지를 띄워서
+    // 길게 눌러 "사진에 저장"하도록 함 (iOS에서 가장 확실하게 동작하는 방식)
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if(isMobile){
-      const w = window.open(url, '_blank');
-      if(!w) location.href = url;
-      alert('이미지가 새 탭에서 열립니다. 이미지를 길게 눌러 "사진에 저장"을 선택해 주세요.');
+      showSaveOverlay(canvas.toDataURL('image/png'), filename);
     }else{
+      const url = URL.createObjectURL(blob);
       const a=document.createElement('a');
       a.download=filename; a.href=url;
       document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 120000);
     }
-    setTimeout(()=>URL.revokeObjectURL(url), 120000);
   }catch(err){
     console.error(err);
     alert('저장에 실패했습니다. 외부 URL 이미지를 사용 중이라면 업로드 방식으로 변경해 주세요.');
