@@ -1046,11 +1046,28 @@ async function savePng(){
   btn.textContent='만드는 중...'; btn.disabled=true;
   try{
     const canvas=await html2canvas($('#stage'),{scale:+$('#dpr').value,useCORS:true,allowTaint:false,backgroundColor:null,logging:false});
-    const a=document.createElement('a');
-    a.download=`ipod-${S.model}-${Date.now()}.png`;
-    a.href=canvas.toDataURL('image/png');
-    a.click();
+    const filename = `ipod-${S.model}-${Date.now()}.png`;
+    const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
+    if(!blob) throw new Error('이미지 생성에 실패했습니다.');
+
+    // 모바일 브라우저(특히 iOS Safari)는 <a download>로 트리거하는 다운로드가
+    // 조용히 씹혀서 "저장도 안 되고 보이지도 않는" 것처럼 보이는 경우가 많음.
+    // (공유 시트는 AirDrop·메시지 등 불필요한 옵션까지 다 뜨는 게 오히려 낯설고 번거롭다는
+    // 피드백을 받아서 뺐음 — 대신 이미지를 새 탭에 바로 열어 길게 눌러 저장하는 익숙한 방식으로 통일)
+    const url = URL.createObjectURL(blob);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if(isMobile){
+      const w = window.open(url, '_blank');
+      if(!w) location.href = url;
+      alert('이미지가 새 탭에서 열립니다. 이미지를 길게 눌러 "사진에 저장"을 선택해 주세요.');
+    }else{
+      const a=document.createElement('a');
+      a.download=filename; a.href=url;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+    setTimeout(()=>URL.revokeObjectURL(url), 120000);
   }catch(err){
+    console.error(err);
     alert('저장에 실패했습니다. 외부 URL 이미지를 사용 중이라면 업로드 방식으로 변경해 주세요.');
   }
   btn.textContent=old; btn.disabled=false;
