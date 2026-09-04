@@ -159,6 +159,10 @@ input[type=color]{width:100%;height:30px;padding:2px;border:1px solid var(--bd);
 .wheel{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .hub{border-radius:50%}
 .wlab{position:absolute;font-family:Helvetica,Arial,sans-serif;font-weight:700;letter-spacing:.06em;line-height:1}
+/* 클릭휠 아이콘은 문자(◀◀ ▶▶ ▶❙❙) 대신 CSS 도형으로 그림 —
+   문자로 두면 iOS에서 PNG로 뽑을 때 컬러 이모지(⏪⏩▶️)로 바뀌어 버림 */
+.wico{position:absolute;display:flex;align-items:center;line-height:0}
+.wico i{display:block}
 .engrave{position:absolute;left:0;right:0;text-align:center;font-family:Helvetica,Arial,sans-serif;letter-spacing:.14em;white-space:nowrap;overflow:hidden}
 .screen{position:relative;overflow:hidden;background:#fff}
 .glare{position:absolute;inset:0;pointer-events:none}
@@ -835,6 +839,12 @@ function render(){
   const edgeA = dark?0.10:0.34;
   const bez = 2.6;
 
+  // 클릭휠 아이콘(◀◀ ▶▶ ▶❙❙)을 CSS 도형으로 — 문자로 두면 iOS에서 저장 시 컬러 이모지로 바뀜
+  const icoH = wheel*0.062, icoW = wheel*0.046, icoGap = wheel*0.012, barW = wheel*0.017;
+  const triL = `<i style="width:0;height:0;border-right:${px(icoW)} solid ${labCol};border-top:${px(icoH/2)} solid transparent;border-bottom:${px(icoH/2)} solid transparent"></i>`;
+  const triR = `<i style="width:0;height:0;border-left:${px(icoW)} solid ${labCol};border-top:${px(icoH/2)} solid transparent;border-bottom:${px(icoH/2)} solid transparent"></i>`;
+  const bar  = `<i style="width:${px(barW)};height:${px(icoH)};background:${labCol}"></i>`;
+
   // 좌우 가장자리 하이라이트는 예전엔 .dev 위에 겹쳐진 별도 div 2개(.edge)로 그렸는데,
   // html2canvas로 PNG를 뽑으면 레이어 경계에 미리보기엔 없던 얇은 세로줄이 생기는 문제가 있었음.
   // 그래서 별도 요소 없이 .dev 배경 자체에 좌우 하이라이트를 한 장의 gradient로 합쳐서 그림(레이어 경계 자체가 사라짐).
@@ -873,9 +883,11 @@ function render(){
           border:1px solid rgba(0,0,0,${dark?0.40:0.12});
         "></div>
       <div class="wlab" style="top:${px(wheel*0.075)};left:0;right:0;text-align:center;font-size:${px(wheel*0.072)};color:${labCol}">MENU</div>
-      <div class="wlab" style="left:${px(wheel*0.075)};top:50%;margin-top:${px(-wheel*0.035)};font-size:${px(wheel*0.07)};color:${labCol}">◀◀</div>
-      <div class="wlab" style="right:${px(wheel*0.075)};top:50%;margin-top:${px(-wheel*0.035)};font-size:${px(wheel*0.07)};color:${labCol}">▶▶</div>
-      <div class="wlab" style="bottom:${px(wheel*0.075)};left:0;right:0;text-align:center;font-size:${px(wheel*0.07)};color:${labCol}">▶ ❙❙</div>
+      <div class="wico" style="left:${px(wheel*0.072)};top:50%;margin-top:${px(-icoH/2)};gap:${px(icoGap)}">${triL}${triL}</div>
+      <div class="wico" style="right:${px(wheel*0.072)};top:50%;margin-top:${px(-icoH/2)};gap:${px(icoGap)}">${triR}${triR}</div>
+      <div class="wico" style="bottom:${px(wheel*0.072)};left:0;right:0;justify-content:center;gap:${px(icoGap*2.4)}">
+        ${triR}<span style="display:flex;gap:${px(barW*0.85)};line-height:0">${bar}${bar}</span>
+      </div>
     </div>
   </div>`;
 
