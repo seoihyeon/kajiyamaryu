@@ -372,7 +372,10 @@ input[type=color]{width:100%;height:30px;padding:2px;border:1px solid var(--bd);
           </div>
         </div>
         <div class="f" id="artUpload"><input class="file" type="file" id="artFile" accept="image/*"></div>
-        <div class="f" id="artUrl"><input type="text" id="artSrc" placeholder="https://..."><p class="hint">외부 이미지는 사이트에 따라 PNG 저장 시 비어 보일 수 있습니다. 이 경우 업로드 방식을 이용해 주세요.</p></div>
+        <div class="f" id="artUrl">
+          <input type="text" id="artSrc" placeholder="이미지 주소 또는 유튜브 링크">
+          <p class="hint" id="artSrcHint">유튜브 링크를 붙여넣으면 해당 영상의 썸네일이 자동으로 앨범아트가 됩니다. 그 외 외부 이미지는 사이트에 따라 PNG 저장 시 비어 보일 수 있으니, 그럴 때는 업로드 방식을 이용해 주세요.</p>
+        </div>
         <div id="artGrad">
           <div class="f row2">
             <div><label>색 1</label><button type="button" class="colorbtn" id="artC1"></button></div>
@@ -645,9 +648,11 @@ S.songs.forEach(s=>{
   if(!s.mode) s.mode='grad';
   if(s.solid==null) s.solid=false;
   if(s.c2prev===undefined) s.c2prev=null;
+  if(s.srcInput==null) s.srcInput='';   // 이미지 URL 칸에 사용자가 넣은 원본 텍스트(유튜브 링크 등)
+  if(s.ytFrom==null) s.ytFrom='';       // 이미 썸네일을 불러온 유튜브 영상 ID
 });
 
-const curSong = () => S.songs[Math.min(S.cur,S.songs.length-1)] || {t:'',a:'',c1:'#ccc',c2:'#999',angle:135,emoji:'',img:'',mode:'grad',solid:false,c2prev:null};
+const curSong = () => S.songs[Math.min(S.cur,S.songs.length-1)] || {t:'',a:'',c1:'#ccc',c2:'#999',angle:135,emoji:'',img:'',mode:'grad',solid:false,c2prev:null,srcInput:'',ytFrom:''};
 
 /* 평면 앨범아트(Now Playing·메뉴 사이드용) */
 function artBg(song){
@@ -820,6 +825,9 @@ function render(){
     fit = Math.min(1, availW/(stW*k), availH/(stH*k));
   }
   const kk = k*fit;
+  // 폰처럼 화면이 좁으면 미리보기가 축소돼 렌더되는데, 저장 해상도까지 같이 줄어들면 안 되므로
+  // 축소 배율을 기억해 뒀다가 PNG로 뽑을 때 그만큼 곱해 보정함 (기기와 상관없이 같은 해상도)
+  S._fit = fit;
 
   const px=n=>Math.round(n*kk*100)/100+'px';
   // 화면과 휠 사이 여백 — 각인이 있으면 휠을 살짝 줄여 자리를 만든다
@@ -1012,8 +1020,8 @@ function paintSongs(){
       render();
     });
     fileIn.onchange=e=>{ const f=e.target.files[0]; if(!f) return;
-      const r=new FileReader(); r.onload=()=>{ s.img=r.result; s.mode='upload'; paintSongs(); if(i===S.cur) syncSongFields(); render(); }; r.readAsDataURL(f); };
-    if(clrBtn) clrBtn.onclick=(e)=>{ e.preventDefault(); e.stopPropagation(); s.img=''; if(s.mode==='upload'||s.mode==='url') s.mode='grad'; paintSongs(); if(i===S.cur) syncSongFields(); render(); };
+      const r=new FileReader(); r.onload=()=>{ s.img=r.result; s.srcInput=''; s.ytFrom=''; s.mode='upload'; paintSongs(); if(i===S.cur) syncSongFields(); render(); }; r.readAsDataURL(f); };
+    if(clrBtn) clrBtn.onclick=(e)=>{ e.preventDefault(); e.stopPropagation(); s.img=''; s.srcInput=''; s.ytFrom=''; if(s.mode==='upload'||s.mode==='url') s.mode='grad'; paintSongs(); if(i===S.cur) syncSongFields(); render(); };
     del.onclick=()=>{ if(S.songs.length<=1) return; S.songs.splice(i,1); if(S.cur>=S.songs.length) S.cur=S.songs.length-1; paintSongs(); syncSongFields(); render(); };
     wrap.appendChild(row);
   });
@@ -1024,7 +1032,7 @@ function syncSongFields(){
   $('#artC1').style.background=s.c1; $('#artC2').style.background=s.c2;
   $('#artAngle').value=s.angle; $('#artAV').textContent=s.angle+'°';
   $('#artEmoji').value=s.emoji;
-  $('#artSrc').value = s.mode==='url' ? s.img : '';
+  $('#artSrc').value = s.mode==='url' ? (s.srcInput || s.img || '') : '';
   paintChips(); paintSongs();
 }
 function bindAll(){
@@ -1042,7 +1050,7 @@ function bindAll(){
   document.querySelectorAll('#artChips .chip').forEach(c=>c.onclick=()=>{
     const s=curSong(); s.mode=c.dataset.art;
     if(s.mode==='grad') s.img='';
-    $('#artSrc').value = s.mode==='url' ? s.img : '';
+    $('#artSrc').value = s.mode==='url' ? (s.srcInput || s.img || '') : '';
     paintChips(); paintSongs(); render();
   });
   document.querySelectorAll('#bgChips .chip').forEach(c=>c.onclick=()=>{ S.bg.mode=c.dataset.bg; paintChips(); render(); });
@@ -1061,8 +1069,34 @@ function bindAll(){
   $('#sTot').oninput=e=>{ S.totTime=e.target.value; render(); };
 
   $('#artFile').onchange=e=>{ const f=e.target.files[0]; if(!f) return;
-    const r=new FileReader(); r.onload=()=>{ curSong().img=r.result; curSong().mode='upload'; paintChips(); paintSongs(); render(); }; r.readAsDataURL(f); };
-  $('#artSrc').oninput=e=>{ curSong().img=e.target.value; render(); };
+    const r=new FileReader(); r.onload=()=>{ const cs=curSong(); cs.img=r.result; cs.srcInput=''; cs.ytFrom=''; cs.mode='upload'; paintChips(); paintSongs(); render(); }; r.readAsDataURL(f); };
+  let ytSeq = 0;
+  $('#artSrc').oninput=async e=>{
+    const val = e.target.value;
+    const song = curSong();
+    const hint = $('#artSrcHint');
+    song.srcInput = val;
+    const id = youtubeId(val);
+    if(!id){
+      song.img = val; song.ytFrom = '';
+      hint.textContent = '유튜브 링크를 붙여넣으면 해당 영상의 썸네일이 자동으로 앨범아트가 됩니다. 그 외 외부 이미지는 사이트에 따라 PNG 저장 시 비어 보일 수 있으니, 그럴 때는 업로드 방식을 이용해 주세요.';
+      render(); paintSongs(); return;
+    }
+    if(song.ytFrom === id) return;                    // 같은 영상 링크면 다시 불러오지 않음
+    const seq = ++ytSeq;
+    hint.textContent = '유튜브 링크를 인식했습니다. 썸네일을 불러오는 중입니다...';
+    const r = await youtubeThumb(id);
+    if(seq !== ytSeq) return;                          // 그 사이 다른 걸 입력했으면 무시
+    if(!r){
+      hint.textContent = '썸네일을 불러오지 못했습니다. 링크를 다시 확인하거나 이미지 업로드를 이용해 주세요.';
+      return;
+    }
+    song.img = r.url; song.ytFrom = id;
+    hint.textContent = r.safe
+      ? '유튜브 썸네일을 불러왔습니다. PNG 저장에도 그대로 반영됩니다.'
+      : '유튜브 썸네일을 불러왔습니다. 다만 이 링크는 PNG 저장 시 비어 보일 수 있어, 그럴 때는 이미지 업로드를 이용해 주세요.';
+    render(); paintSongs();
+  };
   $('#artC1').onclick=()=> CP.open($('#artC1'), curSong().c1, (hex)=>{
     const s=curSong(); s.c1=hex; if(s.solid) s.c2=hex;
     $('#artC1').style.background=hex;
@@ -1087,7 +1121,7 @@ function bindAll(){
   $('#artEmoji').oninput=e=>{ curSong().emoji=e.target.value; render(); };
 
   $('#listTitle').oninput=e=>{ S.listTitle=e.target.value; render(); };
-  $('#addSong').onclick=()=>{ S.songs.push({t:'새 곡',a:'아티스트',c1:'#d8dee8',c2:mix('#d8dee8',-0.28),angle:135,emoji:'',img:'',mode:'grad',solid:false,c2prev:null}); paintSongs(); render(); };
+  $('#addSong').onclick=()=>{ S.songs.push({t:'새 곡',a:'아티스트',c1:'#d8dee8',c2:mix('#d8dee8',-0.28),angle:135,emoji:'',img:'',mode:'grad',solid:false,c2prev:null,srcInput:'',ytFrom:''}); paintSongs(); render(); };
 
   $('#menuTitle').oninput=e=>{ S.menuTitle=e.target.value; render(); };
   $('#menuItems').oninput=e=>{
@@ -1110,6 +1144,55 @@ function bindAll(){
 
   $('#savePng').onclick=savePng;
 }
+/* ═══════════════ 유튜브 링크 → 썸네일 ═══════════════ */
+function youtubeId(url){
+  const u = String(url||'').trim();
+  if(!u) return '';
+  const pats = [
+    /(?:youtube\.com|youtube-nocookie\.com)\/watch\?(?:.*&)?v=([A-Za-z0-9_-]{11})/,
+    /youtu\.be\/([A-Za-z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([A-Za-z0-9_-]{11})/,
+    /youtube\.com\/embed\/([A-Za-z0-9_-]{11})/,
+    /youtube\.com\/live\/([A-Za-z0-9_-]{11})/
+  ];
+  for(const p of pats){ const m=u.match(p); if(m) return m[1]; }
+  return '';
+}
+function loadImg(src, cors){
+  return new Promise((res,rej)=>{
+    const im=new Image();
+    if(cors) im.crossOrigin='anonymous';
+    im.onload=()=>res(im); im.onerror=rej; im.src=src;
+  });
+}
+/* 썸네일을 data URL로 바꿔 두면 PNG 저장 시에도 확실히 같이 그려짐.
+   CORS가 막히면 원본 주소를 그대로 쓰되(미리보기는 보임) 저장 시 빈칸일 수 있음을 알림 */
+async function youtubeThumb(id){
+  const cands = [
+    `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
+    `https://i.ytimg.com/vi/${id}/hq720.jpg`,
+    `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
+  ];
+  for(const src of cands){
+    try{
+      const im = await loadImg(src, true);
+      if(im.naturalWidth < 20) continue;             // 없는 해상도는 120x90 회색 이미지로 응답됨
+      const c = document.createElement('canvas');
+      // 정사각형으로 가운데를 잘라서 앨범아트 비율에 맞춤
+      const side = Math.min(im.naturalWidth, im.naturalHeight);
+      c.width = c.height = side;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(im, (im.naturalWidth-side)/2, (im.naturalHeight-side)/2, side, side, 0, 0, side, side);
+      return { url: c.toDataURL('image/jpeg', 0.92), safe:true };
+    }catch(e){ /* 다음 후보로 */ }
+  }
+  // CORS 실패 — 미리보기용으로 원본 주소라도 사용
+  for(const src of cands){
+    try{ const im = await loadImg(src, false); if(im.naturalWidth>=20) return { url: src, safe:false }; }catch(e){}
+  }
+  return null;
+}
+
 /* 모바일: 새 창/팝업 없이 페이지 안에 결과 이미지를 띄워 길게 눌러 저장하게 함 */
 function showSaveOverlay(dataUrl, filename){
   const prev = document.querySelector('.saveov');
@@ -1134,7 +1217,17 @@ async function savePng(){
   const btn=$('#savePng'), old=btn.textContent;
   btn.textContent='만드는 중...'; btn.disabled=true;
   try{
-    const canvas=await html2canvas($('#stage'),{scale:+$('#dpr').value,useCORS:true,allowTaint:false,backgroundColor:null,logging:false});
+    /* 저장 해상도 계산 —
+       미리보기는 화면 폭에 맞춰 축소돼 있을 수 있으므로(폰에서 특히), 그 축소분(S._fit)을
+       되돌려 곱해서 어떤 기기에서 저장하든 같은 해상도가 나오게 함.
+       단, iOS Safari는 캔버스 크기 상한이 있어 너무 커지면 저장이 실패하므로 한도 안에서 자릅니다. */
+    const el = $('#stage');
+    const bw = el.offsetWidth || 1, bh = el.offsetHeight || 1;
+    const MAXDIM = 4000, MAXAREA = 15000000;
+    let scale = (+$('#dpr').value) / (S._fit || 1);
+    scale = Math.min(scale, MAXDIM/bw, MAXDIM/bh, Math.sqrt(MAXAREA/(bw*bh)));
+    scale = Math.max(1, scale);
+    const canvas=await html2canvas(el,{scale:scale,useCORS:true,allowTaint:false,backgroundColor:null,logging:false});
     const filename = `ipod-${S.model}-${Date.now()}.png`;
     const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
     if(!blob) throw new Error('이미지 생성에 실패했습니다.');
