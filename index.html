@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>아이팟 메이커</title>
+<style>
+:root{
+  --bd:#e2e4e9; --ink:#1b1d22; --sub:#6b7280; --acc:#3b6fd4; --panel:#fff; --bg:#f2f3f6;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:13px; -webkit-font-smoothing:antialiased;
+}
+.app{display:flex;height:100%;min-height:0}
+
+/* ── 좌측 패널 ───────────────────────────── */
+.panel{
+  width:330px;flex:0 0 330px;background:var(--panel);border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;min-height:0;
+}
+.phead{padding:16px 18px 12px;border-bottom:1px solid var(--bd)}
+.phead h1{margin:0;font-size:16px;letter-spacing:-.02em}
+.phead p{margin:4px 0 0;font-size:11.5px;color:var(--sub)}
+.pbody{overflow-y:auto;padding:6px 0 40px;flex:1}
+details{border-bottom:1px solid var(--bd)}
+summary{
+  list-style:none;cursor:pointer;padding:11px 18px;font-weight:600;font-size:12.5px;
+  display:flex;align-items:center;justify-content:space-between;user-select:none;
+}
+summary::-webkit-details-marker{display:none}
+summary:hover{background:#f8f9fb}
+summary::after{content:"＋";color:var(--sub);font-weight:400}
+details[open] summary::after{content:"－"}
+.sec{padding:2px 18px 16px}
+.f{margin-bottom:11px}
+.f>label{display:block;font-size:11px;color:var(--sub);margin-bottom:5px}
+input[type=text],input[type=number],select,textarea{
+  width:100%;padding:7px 9px;border:1px solid var(--bd);border-radius:7px;background:#fbfbfd;
+  font:inherit;font-size:12px;color:var(--ink);outline:none;
+}
+input[type=text]:focus,select:focus,textarea:focus{border-color:var(--acc);background:#fff}
+textarea{resize:vertical;min-height:88px;line-height:1.5}
+input[type=range]{width:100%;accent-color:var(--acc)}
+input[type=color]{width:100%;height:30px;padding:2px;border:1px solid var(--bd);border-radius:7px;background:#fff}
+.colorbtn{width:100%;height:30px;padding:0;border:1px solid var(--bd);border-radius:7px;cursor:pointer;background:#ccc}
+.colorbtn:hover{border-color:#c3c8d2}
+.colorbtn:disabled{opacity:.35;cursor:not-allowed}
+.songrow .colorbtn{flex:0 0 24px;width:24px;height:24px;border-radius:5px;padding:0}
+
+/* ── 커스텀 색상 피커 팝오버 (네이티브 컬러피커가 클릭 즉시 닫혀 비교가 어렵다는 피드백 반영) ── */
+.cpop{
+  width:200px;background:#fff;border:1px solid var(--bd);border-radius:11px;padding:11px;
+  box-shadow:0 10px 30px rgba(20,22,30,.22);font-family:inherit;
+}
+.cpop-sv{position:relative;width:100%;height:130px;border-radius:7px;overflow:hidden;cursor:crosshair;touch-action:none}
+.cpop-sv-white{position:absolute;inset:0;background:linear-gradient(to right, #fff, rgba(255,255,255,0))}
+.cpop-sv-black{position:absolute;inset:0;background:linear-gradient(to top, #000, rgba(0,0,0,0))}
+.cpop-cursor{position:absolute;width:14px;height:14px;border-radius:50%;border:2px solid #fff;
+  box-shadow:0 0 0 1px rgba(0,0,0,.45),inset 0 0 1px rgba(0,0,0,.2);transform:translate(-50%,-50%);pointer-events:none}
+.cpop-hue{position:relative;width:100%;height:14px;border-radius:7px;margin-top:11px;cursor:pointer;touch-action:none;
+  background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
+.cpop-hue-cursor{position:absolute;top:50%;width:16px;height:16px;border-radius:50%;border:2px solid #fff;
+  box-shadow:0 0 0 1px rgba(0,0,0,.45);transform:translate(-50%,-50%);pointer-events:none;background:transparent}
+.cpop-bottom{display:flex;gap:8px;align-items:center;margin-top:11px}
+.cpop-preview{width:30px;height:30px;border-radius:7px;border:1px solid var(--bd);flex:0 0 auto}
+.cpop-bottom input{flex:1;min-width:0;padding:6px 8px;border:1px solid var(--bd);border-radius:6px;
+  font:inherit;font-size:12px;text-transform:uppercase;outline:none}
+.cpop-bottom input:focus{border-color:var(--acc)}
+.row2{display:flex;gap:8px}.row2>*{flex:1;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  padding:6px 11px;border:1px solid var(--bd);border-radius:999px;background:#fff;cursor:pointer;
+  font:inherit;font-size:11.5px;color:#444;
+}
+.chip:hover{border-color:#c3c8d2}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip:disabled{opacity:.35;cursor:not-allowed}
+.sw{display:flex;flex-wrap:wrap;gap:8px}
+.sw button{
+  width:30px;height:30px;border-radius:50%;border:1px solid rgba(0,0,0,.15);cursor:pointer;padding:0;
+  box-shadow:inset 0 1px 2px rgba(255,255,255,.7);
+}
+.sw button.on{outline:2px solid var(--ink);outline-offset:2px}
+.sw-custom{
+  width:30px;height:30px;border-radius:50%;border:1px solid rgba(0,0,0,.15);cursor:pointer;position:relative;
+  display:inline-flex;align-items:center;justify-content:center;font-size:15px;line-height:1;color:#7a7a7a;
+  background:conic-gradient(from 0deg,#ff5252,#ffd452,#6bdc7a,#52c8ff,#7a6bff,#ff52c8,#ff5252);
+  background-size:cover;box-shadow:inset 0 1px 2px rgba(255,255,255,.5)
+}
+.sw-custom.has{color:transparent}
+.sw-custom.on{outline:2px solid var(--ink);outline-offset:2px}
+.sw-custom input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.ck{display:flex;align-items:center;gap:7px;margin:9px 0;font-size:12px;cursor:pointer}
+.ck input{accent-color:var(--acc);width:15px;height:15px}
+.hint{font-size:10.5px;color:var(--sub);line-height:1.5;margin:6px 0 0}
+.mini-b{
+  padding:6px 10px;border:1px solid var(--bd);border-radius:7px;background:#fff;cursor:pointer;
+  font:inherit;font-size:11.5px;
+}
+.mini-b:hover{background:#f6f7f9}
+.songrow{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.songrow input[type=radio]{accent-color:var(--acc);flex:0 0 auto}
+.songrow input[type=text]{flex:1;min-width:0;padding:5px 7px;font-size:11.5px}
+.songrow input[type=color]{flex:0 0 24px;width:24px;height:24px;padding:1px;border-radius:5px}
+.songrow .del{flex:0 0 auto;border:none;background:none;color:#bbb;cursor:pointer;font-size:15px;line-height:1;padding:0 2px}
+.songrow .del:hover{color:#e05252}
+.thumb{flex:0 0 auto;width:26px;height:26px;border:1px solid var(--bd);border-radius:6px;position:relative;
+  cursor:pointer;background-size:cover;background-position:center;overflow:hidden}
+.thumb .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;opacity:.6;pointer-events:none}
+.thumb .clr{position:absolute;top:-1px;right:-1px;width:13px;height:13px;background:#1b1d22;color:#fff;
+  border-radius:0 5px 0 6px;font-size:10px;line-height:13px;text-align:center;cursor:pointer}
+.file{font-size:11px}
+.save{
+  width:100%;padding:11px;border:none;border-radius:9px;background:var(--ink);color:#fff;
+  font:inherit;font-weight:600;font-size:13px;cursor:pointer;
+}
+.save:hover{background:#000}
+
+/* ── 우측 스테이지 ───────────────────────── */
+.stagewrap{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow:auto}
+.stagewrap.transparent-bg{
+  background-image:
+    linear-gradient(45deg, #d9d9de 25%, transparent 25%),
+    linear-gradient(-45deg, #d9d9de 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d9d9de 75%),
+    linear-gradient(-45deg, transparent 75%, #d9d9de 75%);
+  background-size:20px 20px;
+  background-position:0 0,0 10px,10px -10px,-10px 0px;
+  background-color:#fff;
+}
+#stage{
+  width:min(660px,100%);aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;
+  border-radius:16px;overflow:hidden;position:relative;
+}
+.stagenote{margin-top:12px;font-size:11px;color:var(--sub)}
+
+/* ── 기기 ─────────────────────────────── */
+.podwrap{position:relative;display:inline-block;z-index:1}
+.shadow{position:absolute;left:50%;pointer-events:none}
+.case{position:relative;display:inline-block}
+.gloss{position:absolute;pointer-events:none}
+.dev{position:relative;overflow:hidden}
+.edge{position:absolute;top:0;bottom:0;pointer-events:none}
+.bezel{position:absolute;background:#0d0e11}
+.wheel{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.hub{border-radius:50%}
+.wlab{position:absolute;font-family:Helvetica,Arial,sans-serif;font-weight:700;letter-spacing:.06em;line-height:1}
+.engrave{position:absolute;left:0;right:0;text-align:center;font-family:Helvetica,Arial,sans-serif;letter-spacing:.14em;white-space:nowrap;overflow:hidden}
+.screen{position:relative;overflow:hidden;background:#fff}
+.glare{position:absolute;inset:0;pointer-events:none}
+
+/* ── 화면 공통 ─────────────────────────── */
+.scr{width:100%;height:100%;display:flex;flex-direction:column;
+  font-family:"Helvetica Neue",Helvetica,Arial,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  color:#111;line-height:1.25;}
+.tbar{flex:0 0 auto;height:1.85em;display:flex;align-items:center;justify-content:center;position:relative;
+  background:linear-gradient(#fdfefe,#e2e8f1 45%,#c8d3e2);border-bottom:1px solid #8f9cb0;
+  font-weight:700;font-size:.92em;color:#242b38;padding:0 .3em}
+.tbar .tt{max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbar .l{position:absolute;left:.4em;display:flex;align-items:center}
+.tbar .r{position:absolute;right:.4em;display:flex;align-items:center}
+.batt{width:1.5em;height:.78em;border:.09em solid #3f4a5c;border-radius:.14em;padding:.08em;position:relative;display:block}
+.batt i{display:block;height:100%;background:#3f4a5c;border-radius:.05em}
+.batt:after{content:"";position:absolute;right:-.19em;top:26%;width:.13em;height:48%;background:#3f4a5c;border-radius:0 .1em .1em 0}
+.pi{display:block;width:0;height:0;border-left:.55em solid #3f4a5c;border-top:.34em solid transparent;border-bottom:.34em solid transparent}
+.pa{display:flex;gap:.13em}
+.pa i{display:block;width:.16em;height:.66em;background:#3f4a5c}
+
+/* Now Playing */
+.np{flex:1;min-height:0;display:flex;flex-direction:column;padding:.4em .5em .3em}
+.np .cnt{font-size:.85em;color:#6a7280;margin-bottom:.25em}
+.np .mid{flex:1;min-height:0;display:flex;gap:.6em;align-items:center}
+.np .art{flex:0 0 46%;aspect-ratio:1/1;border:1px solid rgba(0,0,0,.22);background-size:cover;background-position:center;
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+.np .art span{font-size:1.5em;opacity:.75}
+.np .info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:.22em}
+.np .t1{font-weight:700;font-size:1.02em}
+.np .t2{font-size:.95em}
+.np .t3{font-size:.9em;color:#5b6472}
+.np .t1,.np .t2,.np .t3{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.np .bot{flex:0 0 auto;padding-top:.3em}
+.np .times{display:flex;justify-content:space-between;font-size:.82em;color:#3f4a5c;margin-bottom:.18em}
+.np .bar{height:.42em;border:1px solid #8b95a6;border-radius:.25em;background:#eef1f5;overflow:hidden}
+.np .bar i{display:block;height:100%;background:linear-gradient(#9fb9e2,#5b82c4)}
+
+/* 메뉴 */
+.mwrap{flex:1;min-height:0;display:flex}
+.mlist{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;background:#fff;scrollbar-width:none}
+.mlist::-webkit-scrollbar{display:none}
+.mlist .it{display:flex;align-items:center;justify-content:space-between;padding:.28em .45em;font-size:.98em;
+  border-bottom:1px solid #e6eaf0;overflow:hidden;white-space:nowrap}
+.mlist .it span{overflow:hidden;text-overflow:ellipsis}
+.mlist .it .ar{color:#93a0b4;font-size:.9em;padding-left:.3em}
+.mlist .it.sel{background:linear-gradient(#a9c6ee,#3f74c6);color:#fff;border-bottom-color:#3f74c6;font-weight:600}
+.mlist .it.sel .ar{color:#fff}
+.mside{flex:0 0 40%;border-left:1px solid #c8d3e2;background:linear-gradient(#f4f6f9,#e6ebf2);
+  display:flex;align-items:stretch;justify-content:stretch;padding:0;overflow:hidden}
+.mside .art{width:100%;height:100%;background-size:cover;background-position:center;
+  display:flex;align-items:center;justify-content:center}
+.mside .art span{font-size:1.4em;opacity:.75}
+
+/* 곡 목록 */
+.lst{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;background:#fff;scrollbar-width:none}
+.lst::-webkit-scrollbar{display:none}
+.lst .it{display:flex;align-items:center;gap:.3em;padding:.28em .45em;font-size:.95em;
+  border-bottom:1px solid #e6eaf0;white-space:nowrap;overflow:hidden}
+.lst .it .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.lst .it .pl{flex:0 0 auto;width:0;height:0;border-left:.42em solid #3f74c6;border-top:.27em solid transparent;border-bottom:.27em solid transparent}
+.lst .it .ar{color:#93a0b4;font-size:.9em}
+.lst .it.sel{background:linear-gradient(#a9c6ee,#3f74c6);color:#fff;border-bottom-color:#3f74c6;font-weight:600}
+.lst .it.sel .pl{border-left-color:#fff}
+.lst .it.sel .ar{color:#fff}
+
+/* Cover Flow */
+.cf{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;overflow:hidden}
+.cfrow{display:flex;align-items:flex-end;justify-content:center;width:100%}
+.cfcell{display:flex;flex-direction:column;align-items:center}
+.cftxt{margin-top:.5em;text-align:center;max-width:92%}
+.cftxt .a{font-size:.95em;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cftxt .b{font-size:.85em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 미니(흑백 LCD) 테마 */
+.lcd .scr{font-family:Geneva,Verdana,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#1e2320}
+.lcd .tbar{background:none;border-bottom:1px solid #5d675e;color:#1e2320;height:1.7em}
+.lcd .batt,.lcd .batt:after{border-color:#1e2320;background-color:transparent}
+.lcd .batt:after{background:#1e2320}
+.lcd .batt i{background:#1e2320}
+.lcd .pi{border-left-color:#1e2320}
+.lcd .pa i{background:#1e2320}
+.lcd .np .cnt,.lcd .np .t3,.lcd .np .times{color:#3e463d}
+.lcd .np .bar{border-color:#4a5249;background:transparent}
+.lcd .np .bar i{background:#2b322a}
+.lcd .mlist,.lcd .lst{background:transparent}
+.lcd .mlist .it,.lcd .lst .it{border-bottom:none;padding:.3em .45em}
+.lcd .mlist .it.sel,.lcd .lst .it.sel{background:#1e2320;color:#cfd8ce}
+.lcd .mlist .it .ar,.lcd .lst .it .ar{color:#5d675e}
+.lcd .mlist .it.sel .ar,.lcd .lst .it.sel .ar{color:#cfd8ce}
+.lcd .lst .it .pl{border-left-color:#1e2320}
+.lcd .lst .it.sel .pl{border-left-color:#cfd8ce}
+</style>
+</head>
+<body>
+<div class="app">
+
+<aside class="panel">
+  <div class="phead">
+    <h1>아이팟 메이커</h1>
+    <p>클래식 · 미니 · 나노 3세대 목업 생성기</p>
+  </div>
+  <div class="pbody">
+
+    <details open>
+      <summary>기기</summary>
+      <div class="sec">
+        <div class="f">
+          <label>모델</label>
+          <div class="chips" id="modelChips">
+            <button class="chip" data-model="classic">iPod classic</button>
+            <button class="chip" data-model="mini">iPod mini</button>
+            <button class="chip" data-model="nano">iPod nano 3G</button>
+          </div>
+        </div>
+        <div class="f">
+          <label>바디 색상</label>
+          <div class="sw" id="colorSw"></div>
+        </div>
+        <div class="f">
+          <label>크기 <b id="scaleV">100%</b></label>
+          <input type="range" id="scale" min="60" max="150" value="100">
+        </div>
+        <label class="ck"><input type="checkbox" id="caseOn"> 투명 케이스 씌우기</label>
+        <label class="ck"><input type="checkbox" id="glare" checked> 화면 유리 반사</label>
+        <div class="f">
+          <label>각인 텍스트 (비워두면 표시되지 않습니다)</label>
+          <input type="text" id="engrave" placeholder="예: 2007. 09. 05.">
+        </div>
+      </div>
+    </details>
+
+    <details open>
+      <summary>화면</summary>
+      <div class="sec">
+        <div class="f">
+          <div class="chips" id="screenChips">
+            <button class="chip" data-screen="now">Now Playing</button>
+            <button class="chip" data-screen="menu">메인 메뉴</button>
+            <button class="chip" data-screen="list">곡 목록</button>
+            <button class="chip" data-screen="cover">Cover Flow</button>
+          </div>
+          <p class="hint" id="screenHint"></p>
+        </div>
+        <div class="f" id="cfBgWrap" style="display:none">
+          <label>Cover Flow 배경</label>
+          <div class="chips" id="cfBgChips">
+            <button class="chip" data-cfbg="black">검정</button>
+            <button class="chip" data-cfbg="white">흰색</button>
+          </div>
+        </div>
+        <div class="f">
+          <label>배터리 <b id="battV">80%</b></label>
+          <input type="range" id="batt" min="0" max="100" value="80">
+        </div>
+        <label class="ck"><input type="checkbox" id="playing" checked> 재생 중 (끄면 일시정지로 표시됩니다)</label>
+      </div>
+    </details>
+
+    <details open>
+      <summary>재생 중인 곡</summary>
+      <div class="sec">
+        <div class="f"><label>곡명</label><input type="text" id="sTitle"></div>
+        <div class="f"><label>아티스트</label><input type="text" id="sArtist"></div>
+        <div class="f"><label>앨범</label><input type="text" id="sAlbum"></div>
+        <div class="f row2">
+          <div><label>재생 위치</label><input type="text" id="sCur" placeholder="2:02"></div>
+          <div><label>전체 길이</label><input type="text" id="sTot" placeholder="3:05"></div>
+        </div>
+        <p class="hint">곡 목록에서 선택한 곡이 재생 중인 곡이 됩니다. 제목과 아티스트는 목록과 자동으로 연결됩니다.</p>
+      </div>
+    </details>
+
+    <details open>
+      <summary>앨범아트</summary>
+      <div class="sec">
+        <p class="hint" style="margin:0 0 8px">재생 중인 곡의 아트워크를 편집합니다. Now Playing·메뉴·Cover Flow 화면에 모두 반영됩니다. 다른 곡의 이미지는 아래 곡 목록의 썸네일에서 각각 지정할 수 있습니다.</p>
+        <div class="f">
+          <div class="chips" id="artChips">
+            <button class="chip" data-art="upload">이미지 업로드</button>
+            <button class="chip" data-art="url">이미지 URL</button>
+            <button class="chip" data-art="grad">단색·그라데이션</button>
+          </div>
+        </div>
+        <div class="f" id="artUpload"><input class="file" type="file" id="artFile" accept="image/*"></div>
+        <div class="f" id="artUrl"><input type="text" id="artSrc" placeholder="https://..."><p class="hint">외부 이미지는 사이트에 따라 PNG 저장 시 비어 보일 수 있습니다. 이 경우 업로드 방식을 이용해 주세요.</p></div>
+        <div id="artGrad">
+          <div class="f row2">
+            <div><label>색 1</label><button type="button" class="colorbtn" id="artC1"></button></div>
+            <div><label>색 2</label><button type="button" class="colorbtn" id="artC2"></button></div>
+          </div>
+          <label class="ck"><input type="checkbox" id="artSolid"> 단색으로 사용하기 (색 2를 사용하지 않습니다)</label>
+          <div class="f" id="artAngleWrap"><label>각도 <b id="artAV">135°</b></label><input type="range" id="artAngle" min="0" max="360" value="135"></div>
+          <div class="f"><label>가운데 글자 (이모지·카오모지, 비워두어도 됩니다)</label><input type="text" id="artEmoji" placeholder="♥"></div>
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary>곡 목록</summary>
+      <div class="sec">
+        <div class="f"><label>목록 제목</label><input type="text" id="listTitle"></div>
+        <div class="f">
+          <label>곡</label>
+          <p class="hint" style="margin:0 0 8px">●는 재생 중인 곡입니다. 오른쪽 썸네일을 클릭하면 곡마다 이미지를 넣을 수 있고, Cover Flow의 해당 곡 커버에도 그대로 표시됩니다. 이미지가 없으면 지정한 색상이 그라데이션으로 대신 표시됩니다.</p>
+          <div id="songs"></div>
+          <button class="mini-b" id="addSong">＋ 곡 추가</button>
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary>메인 메뉴</summary>
+      <div class="sec">
+        <div class="f"><label>메뉴 제목</label><input type="text" id="menuTitle"></div>
+        <div class="f"><label>메뉴 항목 (한 줄에 하나)</label><textarea id="menuItems"></textarea></div>
+        <div class="f"><label>선택된 줄 (1부터)</label><input type="number" id="menuSel" min="1" value="1"></div>
+      </div>
+    </details>
+
+    <details>
+      <summary>배경</summary>
+      <div class="sec">
+        <div class="f">
+          <div class="chips" id="bgChips">
+            <button class="chip" data-bg="solid">단색</button>
+            <button class="chip" data-bg="grad">그라데이션</button>
+            <button class="chip" data-bg="img">이미지</button>
+            <button class="chip" data-bg="none">투명</button>
+          </div>
+        </div>
+        <div class="f row2" id="bgColors">
+          <div><label id="bgC1Label">배경색</label><button type="button" class="colorbtn" id="bgC1"></button></div>
+          <div id="bgC2Wrap"><label>색 2</label><button type="button" class="colorbtn" id="bgC2"></button></div>
+        </div>
+        <div class="f" id="bgImgWrap"><input class="file" type="file" id="bgFile" accept="image/*"></div>
+        <p class="hint" id="bgNoneHint" style="display:none">배경 없이 기기만 투명 PNG로 저장됩니다.</p>
+        <label class="ck"><input type="checkbox" id="shadow" checked> 기기 그림자</label>
+      </div>
+    </details>
+
+    <details open>
+      <summary>저장</summary>
+      <div class="sec">
+        <div class="f">
+          <label>배율</label>
+          <select id="dpr"><option value="1">1x</option><option value="2" selected>2x (권장)</option><option value="3">3x</option></select>
+        </div>
+        <button class="save" id="savePng">PNG로 저장</button>
+      </div>
+    </details>
+
+  </div>
+</aside>
+
+<main class="stagewrap">
+  <div id="stage"></div>
+  <div class="stagenote">아이팟 클래식(6세대) · 미니 · 나노(3세대) — 실제 기기 비율 기준</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+/* ═══════════════ 기기 스펙 (mm 비율 → px) ═══════════════ */
+const SPEC = {
+  classic:{ w:244,h:409,r:15, sw:200,sh:150, stop:26, wheel:172, hub:62, wbot:30, fs:11.2, lcd:false, side:true,  cover:true  },
+  mini:   { w:200,h:360,r:6,  sw:150,sh:94,  stop:23, wheel:150, hub:50, wbot:18, fs:9.6,  lcd:true,  side:false, cover:false },
+  nano:   { w:220,h:294,r:14, sw:171,sh:128, stop:20, wheel:120, hub:46, wbot:16, fs:10.2, lcd:false, side:true,  cover:true  }
+};
+const COLORS = {
+  classic:{ silver:'#dcdee1', black:'#2b2c30' },
+  mini:   { silver:'#dcdee0', gold:'#d8cda2', pink:'#eeb2c8', blue:'#b3c8e6', green:'#c2dbaa' },
+  nano:   { silver:'#d8dadc', pink:'#e14b8b', blue:'#7cbfe2', red:'#c21f36', green:'#8ed2b0', black:'#26272b' }
+};
+const MENUS = {
+  classic:['Music','Videos','Photos','Podcasts','Extras','Settings','Shuffle Songs','Now Playing'],
+  nano:   ['Music','Videos','Photos','Podcasts','Extras','Settings','Shuffle Songs','Now Playing'],
+  mini:   ['Music','Extras','Settings','Shuffle Songs','Backlight','Now Playing']
+};
+
+/* ═══════════════ 상태 ═══════════════ */
+const S = {
+  model:'classic', color:'silver', scale:1, caseOn:true, glare:true, engrave:'',
+  screen:'now', cfBg:'black', batt:80, playing:true,
+  cur:3, curTime:'2:02', totTime:'3:05',
+  listTitle:'Songs',
+  menuTitle:'iPod', menuItems:MENUS.classic.slice(), menuSel:0, menuEdited:false,
+  bg:{ mode:'solid', c1:'#ffffff', c2:'#e4e4e8', src:'' },
+  shadow:true,
+  customColor:{ mini:null, nano:null },
+  songs:[
+    { t:'새벽 세 시',    a:'Stella'  , c1:'#c9d8f0' },
+    { t:'마음 같은 거',  a:'Stella'  , c1:'#f2d3c4' },
+    { t:'여름의 잔상',   a:'루시아'  , c1:'#cfe6d5' },
+    { t:'Hype Boy',     a:'NewJeans', c1:'#b8d0f5', c2:'#f7cfe2', emoji:'♥' },
+    { t:'서울 야경',     a:'겐조'    , c1:'#7889a3' },
+    { t:'파란 노트',     a:'이현'    , c1:'#a9c4e8' },
+    { t:'첫 눈 오는 날', a:'류'      , c1:'#eae6f2' },
+    { t:'어떤 날의 우리',a:'Stella'  , c1:'#f0dcc0' },
+    { t:'라디오',        a:'루시아'  , c1:'#d9ccef' }
+  ]
+};
+S.album = "NewJeans 'New Jeans'";
+
+/* ═══════════════ 유틸 ═══════════════ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sec = s => { const p=String(s||'').split(':').map(n=>parseInt(n,10)||0); return p.length>1 ? p[0]*60+p[1] : p[0]; };
+const fmt = n => { n=Math.max(0,Math.round(n)); return Math.floor(n/60)+':'+String(n%60).padStart(2,'0'); };
+function lum(hex){
+  const h=String(hex||'#999').replace('#',''); const n=h.length===3?h.split('').map(c=>c+c).join(''):h;
+  const r=parseInt(n.substr(0,2),16)||0,g=parseInt(n.substr(2,2),16)||0,b=parseInt(n.substr(4,2),16)||0;
+  return (0.299*r+0.587*g+0.114*b)/255;
+}
+function mix(hex,amt){ // amt>0 밝게, <0 어둡게
+  const h=String(hex||'#999').replace('#',''); const n=h.length===3?h.split('').map(c=>c+c).join(''):h;
+  let r=parseInt(n.substr(0,2),16)||0,g=parseInt(n.substr(2,2),16)||0,b=parseInt(n.substr(4,2),16)||0;
+  const t=amt>0?255:0, a=Math.abs(amt);
+  r=Math.round(r+(t-r)*a); g=Math.round(g+(t-g)*a); b=Math.round(b+(t-b)*a);
+  return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+/* ═══════════════ 커스텀 색상 피커 (네이티브 <input type=color>는 클릭하자마자
+   닫혀버려서 색을 옮겨가며 비교하기 불편하다는 피드백으로, 직접 만든 팝오버로 교체) ═══════════════ */
+function hexToRgb(hex){
+  const h=String(hex||'#999999').replace('#',''); const n=h.length===3?h.split('').map(c=>c+c).join(''):h;
+  return [parseInt(n.substr(0,2),16)||0, parseInt(n.substr(2,2),16)||0, parseInt(n.substr(4,2),16)||0];
+}
+function rgbToHex(r,g,b){ return '#'+[r,g,b].map(v=>Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,'0')).join(''); }
+function rgbToHsv(r,g,b){
+  r/=255; g/=255; b/=255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+  let h=0;
+  if(d!==0){
+    if(max===r) h=((g-b)/d)%6;
+    else if(max===g) h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h*=60; if(h<0) h+=360;
+  }
+  return [h, max===0?0:d/max, max];
+}
+function hsvToRgb(h,s,v){
+  const c=v*s, x=c*(1-Math.abs((h/60)%2-1)), m=v-c;
+  let r=0,g=0,b=0;
+  if(h<60){r=c;g=x;b=0} else if(h<120){r=x;g=c;b=0} else if(h<180){r=0;g=c;b=x}
+  else if(h<240){r=0;g=x;b=c} else if(h<300){r=x;g=0;b=c} else {r=c;g=0;b=x}
+  return [(r+m)*255,(g+m)*255,(b+m)*255];
+}
+const CP = (()=>{
+  const pop=document.createElement('div');
+  pop.className='cpop'; pop.style.cssText='display:none;position:fixed;z-index:1000';
+  pop.innerHTML = `
+    <div class="cpop-sv" id="cpopSV">
+      <div class="cpop-sv-white"></div>
+      <div class="cpop-sv-black"></div>
+      <div class="cpop-cursor" id="cpopCursor"></div>
+    </div>
+    <div class="cpop-hue" id="cpopHue"><div class="cpop-hue-cursor" id="cpopHueCursor"></div></div>
+    <div class="cpop-bottom">
+      <div class="cpop-preview" id="cpopPreview"></div>
+      <input type="text" id="cpopHex" maxlength="7" spellcheck="false">
+    </div>`;
+  document.body.appendChild(pop);
+  const sv=pop.querySelector('#cpopSV'), cur=pop.querySelector('#cpopCursor');
+  const hueEl=pop.querySelector('#cpopHue'), hueCur=pop.querySelector('#cpopHueCursor');
+  const preview=pop.querySelector('#cpopPreview'), hexInp=pop.querySelector('#cpopHex');
+  let h=0,s=0,v=1, onChange=null, isOpen=false, anchor=null;
+
+  function apply(fire){
+    sv.style.background=`hsl(${h},100%,50%)`;
+    cur.style.left=(s*100)+'%'; cur.style.top=((1-v)*100)+'%';
+    hueCur.style.left=(h/360*100)+'%';
+    const [r,g,b]=hsvToRgb(h,s,v); const hex=rgbToHex(r,g,b);
+    preview.style.background=hex;
+    if(document.activeElement!==hexInp) hexInp.value=hex;
+    if(fire && onChange) onChange(hex);
+  }
+  function setFromHex(hex){ const [r,g,b]=hexToRgb(hex); [h,s,v]=rgbToHsv(r,g,b); apply(false); }
+  function svPointer(e){
+    const r=sv.getBoundingClientRect();
+    s=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+    v=1-Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));
+    apply(true);
+  }
+  function huePointer(e){
+    const r=hueEl.getBoundingClientRect();
+    h=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*360;
+    apply(true);
+  }
+  function dragify(el, handler){
+    el.addEventListener('pointerdown', e=>{
+      e.preventDefault(); el.setPointerCapture && el.setPointerCapture(e.pointerId);
+      handler(e);
+      const move=ev=>handler(ev);
+      const up=()=>{ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); };
+      document.addEventListener('pointermove',move);
+      document.addEventListener('pointerup',up);
+    });
+  }
+  dragify(sv, svPointer);
+  dragify(hueEl, huePointer);
+  hexInp.addEventListener('input', ()=>{
+    let val=hexInp.value.trim();
+    if(/^#?[0-9a-f]{6}$/i.test(val)){
+      if(val[0]!=='#') val='#'+val;
+      const [r,g,b]=hexToRgb(val); [h,s,v]=rgbToHsv(r,g,b); apply(true);
+    }
+  });
+  function outsideDown(e){ if(!pop.contains(e.target) && e.target!==anchor) close(); }
+  function close(){
+    if(!isOpen) return;
+    isOpen=false; pop.style.display='none'; anchor=null;
+    document.removeEventListener('pointerdown', outsideDown, true);
+  }
+  function openAt(anchorEl, hex, cb){
+    if(isOpen && anchor===anchorEl){ close(); return; }
+    onChange=cb; anchor=anchorEl;
+    setFromHex(hex||'#cccccc');
+    pop.style.display='block';
+    const r=anchorEl.getBoundingClientRect();
+    const pw=222, ph=232;
+    let left=Math.min(r.left, window.innerWidth-pw-8);
+    let top=r.bottom+6;
+    if(top+ph>window.innerHeight-8) top=Math.max(8, r.top-ph-6);
+    pop.style.left=Math.max(8,left)+'px'; pop.style.top=top+'px';
+    isOpen=true;
+    setTimeout(()=>document.addEventListener('pointerdown', outsideDown, true),0);
+  }
+  return { open: openAt, close };
+})();
+
+// 곡 기본값 채우기 (색 2·각도·이모지·이미지·모드·단색여부)
+S.songs.forEach(s=>{
+  if(!s.c2) s.c2=mix(s.c1,-0.28);
+  if(s.angle==null) s.angle=135;
+  if(s.emoji==null) s.emoji='';
+  if(s.img==null) s.img='';
+  if(!s.mode) s.mode='grad';
+  if(s.solid==null) s.solid=false;
+  if(s.c2prev===undefined) s.c2prev=null;
+});
+
+const curSong = () => S.songs[Math.min(S.cur,S.songs.length-1)] || {t:'',a:'',c1:'#ccc',c2:'#999',angle:135,emoji:'',img:'',mode:'grad',solid:false,c2prev:null};
+
+/* 평면 앨범아트(Now Playing·메뉴 사이드용) */
+function artBg(song){
+  if(song.img) return `background-image:url('${esc(song.img)}');background-size:cover;background-position:center;`;
+  return `background-image:linear-gradient(${song.angle}deg, ${song.c1}, ${song.c2});`;
+}
+function artInner(song){
+  if(song.img) return '';
+  return song.emoji ? `<span style="color:${lum(song.c1)>0.55?'rgba(0,0,0,.55)':'rgba(255,255,255,.9)'}">${esc(song.emoji)}</span>` : '';
+}
+
+/* ═══════════════ Cover Flow 전용 SVG 렌더 (기울임 + 반사) ═══════════════ */
+let svgUid=0;
+function svgFace(song, w, h, compress, side, strokeColor){
+  const id='cf'+(svgUid++);
+  // 바닥선은 항상 수평(0~h)으로 고정하고, 압축은 윗쪽 모서리에서만 일어나게 해서
+  // 반사(svgReflection)와 맞닿는 하단 경계에 삼각형 여백이 생기지 않도록 함
+  const pts = compress<=0
+    ? `0,0 ${w},0 ${w},${h} 0,${h}`
+    : side==='right'
+      ? `0,0 ${w},${(h*compress).toFixed(1)} ${w},${h} 0,${h}`
+      : `0,${(h*compress).toFixed(1)} ${w},0 ${w},${h} 0,${h}`;
+  const gradId=id+'g', shadeId=id+'s';
+  const fillDef = song.img ? '' : `<linearGradient id="${gradId}" x1="0" y1="0" x2="1" y2="1" gradientTransform="rotate(${song.angle} .5 .5)"><stop offset="0" stop-color="${song.c1}"/><stop offset="1" stop-color="${song.c2}"/></linearGradient>`;
+  const shadeDir = side==='right' ? 'x1="0" y1="0" x2="1" y2="0"' : 'x1="1" y1="0" x2="0" y2="0"';
+  const shadeOp = compress>0 ? Math.min(0.62, 0.18+compress*1.3) : 0;
+  const emoji = (!song.img && song.emoji && compress<=0)
+    ? `<text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" font-size="${Math.round(Math.min(w,h)*0.34)}" fill="${lum(song.c1)>0.55?'rgba(0,0,0,.55)':'rgba(255,255,255,.9)'}">${esc(song.emoji)}</text>`
+    : '';
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block">
+    <defs>
+      ${fillDef}
+      <linearGradient id="${shadeId}" ${shadeDir}><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="${shadeOp}"/></linearGradient>
+      <clipPath id="${id}c"><polygon points="${pts}"/></clipPath>
+    </defs>
+    <g clip-path="url(#${id}c)">
+      <rect width="${w}" height="${h}" fill="${song.img?'#1c1c1c':('url(#'+gradId+')')}"/>
+      ${song.img?`<image href="${esc(song.img)}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:''}
+      <rect width="${w}" height="${h}" fill="url(#${shadeId})"/>
+      ${emoji}
+      <polygon points="${pts}" fill="none" stroke="${strokeColor}" stroke-width="1"/>
+    </g>
+  </svg>`;
+}
+function svgReflection(song, w, h, compress, side, bgRGB, strokeColor){
+  const rh = Math.max(1, Math.round(h*0.36));
+  return `<div style="width:${w}px;height:${rh}px;overflow:hidden;position:relative;display:block">
+    <div style="transform:scaleY(-1);width:${w}px;height:${h}px;opacity:.55">${svgFace(song,w,h,compress,side,strokeColor)}</div>
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(${bgRGB},0) 0%, rgba(${bgRGB},.65) 55%, rgba(${bgRGB},.97) 100%)"></div>
+  </div>`;
+}
+
+/* ═══════════════ 화면 렌더 ═══════════════ */
+function battHTML(){
+  return `<span class="batt"><i style="width:${Math.max(3,S.batt)}%"></i></span>`;
+}
+function playHTML(){
+  return S.playing ? `<span class="pi"></span>` : `<span class="pa"><i></i><i></i></span>`;
+}
+function topbar(title){
+  return `<div class="tbar"><span class="l">${playHTML()}</span><span class="tt">${esc(title)}</span><span class="r">${battHTML()}</span></div>`;
+}
+function scrNow(sp){
+  const s=curSong(), c=sec(S.curTime), t=Math.max(sec(S.totTime),1);
+  const pct=Math.max(0,Math.min(100,c/t*100));
+  const art = sp.lcd ? '' : `<div class="art" style="${artBg(s)}">${artInner(s)}</div>`;
+  return topbar('Now Playing')+`
+  <div class="np">
+    <div class="cnt">${S.cur+1} of ${S.songs.length}</div>
+    <div class="mid">${art}
+      <div class="info">
+        <div class="t1">${esc(s.t)}</div>
+        <div class="t2">${esc(s.a)}</div>
+        <div class="t3">${esc(S.album)}</div>
+      </div>
+    </div>
+    <div class="bot">
+      <div class="times"><span>${fmt(c)}</span><span>-${fmt(Math.max(0,t-c))}</span></div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+    </div>
+  </div>`;
+}
+function scrMenu(sp){
+  const items = S.menuItems.map((m,idx)=>`<div class="it${idx===S.menuSel?' sel':''}"><span>${esc(m)}</span><span class="ar">›</span></div>`).join('');
+  const s=curSong();
+  const side = sp.side ? `<div class="mside"><div class="art" style="${artBg(s)}">${artInner(s)}</div></div>` : '';
+  return topbar(S.menuTitle)+`<div class="mwrap"><div class="mlist">${items}</div>${side}</div>`;
+}
+function scrList(sp){
+  const items = S.songs.map((s,idx)=>{
+    const on=idx===S.cur;
+    return `<div class="it${on?' sel':''}">${on?'<span class="pl"></span>':''}<span class="nm">${esc(s.t)}</span><span class="ar">›</span></div>`;
+  }).join('');
+  return topbar(S.listTitle)+`<div class="lst">${items}</div>`;
+}
+function scrCover(sp){
+  const isWhite = S.cfBg==='white';
+  const bgHex = isWhite?'#ffffff':'#000000';
+  const txtCol = isWhite?'#161616':'#ffffff';
+  const subCol = isWhite?'#5b5b5b':'#b9bec7';
+  const bgRGB = isWhite?'255,255,255':'0,0,0';
+  const strokeColor = isWhite?'rgba(0,0,0,.18)':'rgba(255,255,255,.28)';
+  const s=curSong();
+  const size = Math.round(sp.sh*0.50);
+  const gapx = Math.max(1,Math.round(size*0.045));
+
+  function cell(i,depth){
+    const song=S.songs[i];
+    if(!song){
+      const w=Math.round(size*(depth===1?0.42:0.30));
+      return `<div style="width:${w+gapx*2}px;flex:0 0 auto"></div>`;
+    }
+    const faceH = Math.round(size*(depth===1?0.92:0.78));
+    const faceW = Math.round(faceH*(depth===1?0.46:0.34));
+    const compress = depth===1?0.15:0.28;
+    // 안쪽(중앙에 가까운) 모서리를 압축하고, 바깥쪽 모서리가 온전한 높이로 길게 남도록 함
+    const side = i<S.cur ? 'right' : 'left';
+    const mt = size-faceH;
+    return `<div class="cfcell" style="margin:${mt}px ${gapx}px 0 ${gapx}px">
+      ${svgFace(song,faceW,faceH,compress,side,strokeColor)}
+      ${svgReflection(song,faceW,faceH,compress,side,bgRGB,strokeColor)}
+    </div>`;
+  }
+  const centerFace=svgFace(s,size,size,0,null,strokeColor);
+  const centerRefl=svgReflection(s,size,size,0,null,bgRGB,strokeColor);
+  const centerCell=`<div class="cfcell" style="margin:0 ${gapx}px">${centerFace}${centerRefl}</div>`;
+
+  return `<div class="cf" style="background:${bgHex}">
+    <div class="cfrow">
+      ${cell(S.cur-2,2)}${cell(S.cur-1,1)}
+      ${centerCell}
+      ${cell(S.cur+1,1)}${cell(S.cur+2,2)}
+    </div>
+    <div class="cftxt"><div class="a" style="color:${txtCol}">${esc(s.t)}</div><div class="b" style="color:${subCol}">${esc(s.a)}</div></div>
+  </div>`;
+}
+
+/* ═══════════════ 기기 렌더 ═══════════════ */
+function render(){
+  const sp=SPEC[S.model], k=S.scale;
+  const base = S.color==='custom' && S.customColor[S.model]
+    ? S.customColor[S.model]
+    : (COLORS[S.model][S.color] || Object.values(COLORS[S.model])[0]);
+  const dark=lum(base)<0.5;
+  // 클릭휠 색 (미니는 휠은 항상 흰색, 가운데 버튼만 바디 색상)
+  let wheelCol, labCol, hubCol;
+  if(S.model==='mini'){ wheelCol='#f8f8f6'; labCol='rgba(58,62,66,.62)'; hubCol=base; }
+  else if(S.model==='classic'){ wheelCol=dark?mix(base,.10):mix(base,.06); labCol=dark?'rgba(255,255,255,.62)':'rgba(0,0,0,.36)'; hubCol=dark?mix(base,.16):mix(base,.10); }
+  else { wheelCol=mix(base,dark?.10:.10); labCol=dark?'rgba(255,255,255,.72)':'rgba(0,0,0,.38)'; hubCol=mix(base,dark?.18:.16); }
+
+  const px=n=>Math.round(n*k*100)/100+'px';
+  // 화면과 휠 사이 여백 — 각인이 있으면 휠을 살짝 줄여 자리를 만든다
+  let wheel=sp.wheel, hub=sp.hub;
+  let gap = sp.h - sp.stop - sp.sh - sp.wbot - wheel;
+  if(S.engrave && gap<15){ const d=Math.min(15-gap,18); wheel-=d; hub-=d*0.36; gap+=d; }
+  const engSize = Math.max(5.2, Math.min(8.5, gap*0.44));
+  const engTop = sp.stop + sp.sh + (gap - engSize*1.35)/2;
+
+  const scrHTML = S.screen==='now'?scrNow(sp) : S.screen==='menu'?scrMenu(sp) : S.screen==='list'?scrList(sp) : scrCover(sp);
+  const lcdBg = 'linear-gradient(180deg,#d7ded8,#c4cec8)';
+
+  const glare = S.glare ? `<div class="glare" style="background:linear-gradient(122deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.14) 34%, rgba(255,255,255,0) 35%, rgba(255,255,255,0) 100%);"></div>` : '';
+
+  const cTop = mix(base, dark?0.13:0.24);
+  const cBot = mix(base, dark?-0.22:-0.13);
+  const edgeA = dark?0.10:0.34;
+  const bez = 2.6;
+
+  const device = `
+  <div class="dev ${sp.lcd?'lcd':''}" style="
+      width:${px(sp.w)};height:${px(sp.h)};border-radius:${px(sp.r)};
+      background:linear-gradient(180deg, ${cTop} 0%, ${base} 17%, ${base} 66%, ${cBot} 100%);
+      border:1px solid rgba(0,0,0,${dark?0.55:0.20});
+    ">
+    <div class="edge" style="left:0;width:9%;background:linear-gradient(90deg, rgba(0,0,0,.09), rgba(255,255,255,${edgeA}) 55%, rgba(255,255,255,0))"></div>
+    <div class="edge" style="right:0;width:9%;background:linear-gradient(270deg, rgba(0,0,0,.09), rgba(255,255,255,${edgeA}) 55%, rgba(255,255,255,0))"></div>
+    <div class="bezel" style="
+        left:50%;margin-left:${px(-sp.sw/2-bez)};top:${px(sp.stop-bez)};
+        padding:${px(bez)};border-radius:${px(3.4)}">
+      <div class="screen" style="width:${px(sp.sw)};height:${px(sp.sh)};font-size:${px(sp.fs)};background:${sp.lcd?lcdBg:'#fff'}">
+        <div class="scr">${scrHTML}</div>
+        ${glare}
+      </div>
+    </div>
+    ${S.engrave?`<div class="engrave" style="top:${px(engTop)};font-size:${px(engSize)};color:${dark?'rgba(255,255,255,.5)':'rgba(0,0,0,.28)'}">${esc(S.engrave)}</div>`:''}
+    <div class="wheel" style="
+        left:50%;margin-left:${px(-wheel/2)};bottom:${px(sp.wbot)};
+        width:${px(wheel)};height:${px(wheel)};
+        background:radial-gradient(ellipse at 50% 22%, ${mix(wheelCol,dark?0.16:0.24)} 0%, ${wheelCol} 58%, ${mix(wheelCol,-0.07)} 100%);
+        border:1px solid rgba(0,0,0,${dark?0.42:0.13});
+      ">
+      <div class="hub" style="
+          width:${px(hub)};height:${px(hub)};
+          background:radial-gradient(ellipse at 50% 26%, ${mix(hubCol,dark?0.20:0.32)} 0%, ${hubCol} 66%, ${mix(hubCol,-0.06)} 100%);
+          border:1px solid rgba(0,0,0,${dark?0.40:0.12});
+        "></div>
+      <div class="wlab" style="top:${px(wheel*0.075)};left:0;right:0;text-align:center;font-size:${px(wheel*0.072)};color:${labCol}">MENU</div>
+      <div class="wlab" style="left:${px(wheel*0.075)};top:50%;margin-top:${px(-wheel*0.035)};font-size:${px(wheel*0.07)};color:${labCol}">◀◀</div>
+      <div class="wlab" style="right:${px(wheel*0.075)};top:50%;margin-top:${px(-wheel*0.035)};font-size:${px(wheel*0.07)};color:${labCol}">▶▶</div>
+      <div class="wlab" style="bottom:${px(wheel*0.075)};left:0;right:0;text-align:center;font-size:${px(wheel*0.07)};color:${labCol}">▶ ❙❙</div>
+    </div>
+  </div>`;
+
+  // 투명 케이스: 반사광 효과는 이상하게 보인다는 피드백을 반영해 완전히 제거.
+  // 케이스 자체는 테두리(림)와 아주 옅은 배경 톤만으로 "씌워져 있다"는 느낌만 남김.
+  const cased = S.caseOn ? `
+  <div class="case" style="
+      padding:${px(8)};border-radius:${px(sp.r+8)};overflow:hidden;
+      background:rgba(255,255,255,.06);
+      border:${px(1.5)} solid rgba(255,255,255,.55);
+    ">
+    ${device}
+  </div>` : device;
+
+  const shadow = S.shadow ? `<div class="shadow" style="
+      width:${px(sp.w*1.5)};margin-left:${px(-sp.w*0.75)};height:${px(sp.h*0.2)};bottom:${px(-sp.h*0.07)};
+      background:radial-gradient(ellipse at 50% 50%, rgba(0,0,0,.34) 0%, rgba(0,0,0,.15) 42%, rgba(0,0,0,0) 70%);"></div>` : '';
+
+  const st=$('#stage'), b=S.bg, wrap=document.querySelector('.stagewrap');
+  if(b.mode==='none'){
+    st.style.background='none';
+    wrap.classList.add('transparent-bg');
+  }else{
+    wrap.classList.remove('transparent-bg');
+    if(b.mode==='img' && b.src){ st.style.background=`url('${b.src}')`; st.style.backgroundSize='cover'; st.style.backgroundPosition='center'; }
+    else if(b.mode==='solid'){ st.style.background=b.c1; }
+    else { st.style.background=`linear-gradient(150deg, ${b.c1}, ${b.c2})`; }
+  }
+  st.innerHTML = `<div class="podwrap">${shadow}<div style="position:relative">${cased}</div></div>`;
+
+  if(S.screen==='menu'||S.screen==='list'){
+    const sel=st.querySelector('.it.sel');
+    if(sel) sel.scrollIntoView({block:'center'});
+  }
+}
+
+/* ═══════════════ 컨트롤 ═══════════════ */
+function paintColorSwatches(){
+  const wrap=$('#colorSw'); wrap.innerHTML='';
+  Object.entries(COLORS[S.model]).forEach(([name,hex])=>{
+    const b=document.createElement('button');
+    b.style.background=hex; b.title=name;
+    if(name===S.color) b.classList.add('on');
+    b.onclick=()=>{ S.color=name; paintColorSwatches(); render(); };
+    wrap.appendChild(b);
+  });
+  if(S.model==='mini' || S.model==='nano'){
+    const cur = S.customColor[S.model];
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='sw-custom'+(S.color==='custom'?' on':'')+(cur?' has':'');
+    btn.title='커스텀 색상 (직접 선택)';
+    if(cur) btn.style.background=cur;
+    btn.innerHTML='<span>+</span>';
+    btn.onclick=()=> CP.open(btn, cur||'#c8c8cc', (hex)=>{
+      S.customColor[S.model]=hex; S.color='custom'; paintColorSwatches(); render();
+    });
+    wrap.appendChild(btn);
+  }
+}
+function paintChips(){
+  document.querySelectorAll('#modelChips .chip').forEach(c=>c.classList.toggle('on', c.dataset.model===S.model));
+  document.querySelectorAll('#screenChips .chip').forEach(c=>{
+    c.classList.toggle('on', c.dataset.screen===S.screen);
+    c.disabled = (c.dataset.screen==='cover' && !SPEC[S.model].cover);
+  });
+  $('#screenHint').textContent = SPEC[S.model].cover ? '' : '아이팟 미니는 흑백 LCD로, Cover Flow와 앨범아트를 지원하지 않습니다. 실제 기기와 동일하게 구현했습니다.';
+  $('#cfBgWrap').style.display = (S.screen==='cover' && SPEC[S.model].cover) ? '' : 'none';
+  document.querySelectorAll('#cfBgChips .chip').forEach(c=>c.classList.toggle('on', c.dataset.cfbg===S.cfBg));
+
+  const s=curSong();
+  document.querySelectorAll('#artChips .chip').forEach(c=>c.classList.toggle('on', c.dataset.art===s.mode));
+  $('#artUpload').style.display = s.mode==='upload'?'':'none';
+  $('#artUrl').style.display    = s.mode==='url'?'':'none';
+  $('#artGrad').style.display   = s.mode==='grad'?'':'none';
+  $('#artSolid').checked = !!s.solid;
+  $('#artC2').disabled = !!s.solid;
+  $('#artC2').style.opacity = s.solid ? .35 : 1;
+  $('#artAngleWrap').style.display = s.solid ? 'none' : '';
+
+  document.querySelectorAll('#bgChips .chip').forEach(c=>c.classList.toggle('on', c.dataset.bg===S.bg.mode));
+  $('#bgColors').style.display  = (S.bg.mode==='grad'||S.bg.mode==='solid')?'':'none';
+  $('#bgC2Wrap').style.display  = S.bg.mode==='grad'?'':'none';
+  $('#bgC1Label').textContent   = S.bg.mode==='solid' ? '배경색' : '색 1';
+  $('#bgImgWrap').style.display = S.bg.mode==='img'?'':'none';
+  $('#bgNoneHint').style.display = S.bg.mode==='none'?'block':'none';
+}
+function paintSongs(){
+  const wrap=$('#songs'); wrap.innerHTML='';
+  S.songs.forEach((s,i)=>{
+    const row=document.createElement('div'); row.className='songrow';
+    const thumbBg = s.img
+      ? `background-image:url('${esc(s.img)}')`
+      : `background-image:linear-gradient(135deg, ${s.c1}, ${s.c2})`;
+    row.innerHTML=`
+      <input type="radio" name="cur" ${i===S.cur?'checked':''} title="재생 중">
+      <input type="text" value="${esc(s.t)}" placeholder="곡명">
+      <input type="text" value="${esc(s.a)}" placeholder="아티스트" style="max-width:70px">
+      <button type="button" class="colorbtn" style="background:${s.c1}" title="그라데이션 색상 (이미지가 없을 때 표시됩니다)"></button>
+      <label class="thumb" style="${thumbBg}" title="클릭해서 곡 커버 이미지를 넣으세요. Now Playing·메뉴·Cover Flow에 표시됩니다.">
+        ${s.img?'':'<span class="ph">🖼</span>'}
+        ${s.img?'<span class="clr" title="이미지 지우기">×</span>':''}
+        <input type="file" accept="image/*" style="display:none">
+      </label>
+      <button class="del" title="삭제">×</button>`;
+    const [rad,ti,ar,co,thumb,del]=row.children;
+    const fileIn = thumb.querySelector('input[type=file]');
+    const clrBtn = thumb.querySelector('.clr');
+    rad.onchange=()=>{ S.cur=i; syncSongFields(); render(); };
+    ti.oninput=()=>{ s.t=ti.value; if(i===S.cur) $('#sTitle').value=s.t; render(); };
+    ar.oninput=()=>{ s.a=ar.value; if(i===S.cur) $('#sArtist').value=s.a; render(); };
+    co.onclick=()=> CP.open(co, s.c1, (hex)=>{
+      s.c1=hex; s.c2 = s.solid ? hex : mix(hex,-0.28);
+      co.style.background=hex;
+      if(!s.img) thumb.style.backgroundImage=`linear-gradient(135deg, ${s.c1}, ${s.c2})`;
+      if(i===S.cur){ $('#artC1').style.background=s.c1; $('#artC2').style.background=s.c2; }
+      render();
+    });
+    fileIn.onchange=e=>{ const f=e.target.files[0]; if(!f) return;
+      const r=new FileReader(); r.onload=()=>{ s.img=r.result; s.mode='upload'; paintSongs(); if(i===S.cur) syncSongFields(); render(); }; r.readAsDataURL(f); };
+    if(clrBtn) clrBtn.onclick=(e)=>{ e.preventDefault(); e.stopPropagation(); s.img=''; if(s.mode==='upload'||s.mode==='url') s.mode='grad'; paintSongs(); if(i===S.cur) syncSongFields(); render(); };
+    del.onclick=()=>{ if(S.songs.length<=1) return; S.songs.splice(i,1); if(S.cur>=S.songs.length) S.cur=S.songs.length-1; paintSongs(); syncSongFields(); render(); };
+    wrap.appendChild(row);
+  });
+}
+function syncSongFields(){
+  const s=curSong();
+  $('#sTitle').value=s.t; $('#sArtist').value=s.a; $('#sAlbum').value=S.album;
+  $('#artC1').style.background=s.c1; $('#artC2').style.background=s.c2;
+  $('#artAngle').value=s.angle; $('#artAV').textContent=s.angle+'°';
+  $('#artEmoji').value=s.emoji;
+  $('#artSrc').value = s.mode==='url' ? s.img : '';
+  paintChips(); paintSongs();
+}
+function bindAll(){
+  document.querySelectorAll('#modelChips .chip').forEach(c=>c.onclick=()=>{
+    S.model=c.dataset.model;
+    const customOk = (S.model==='mini'||S.model==='nano') && S.customColor[S.model];
+    if(S.color==='custom'){ if(!customOk) S.color=Object.keys(COLORS[S.model])[0]; }
+    else if(!COLORS[S.model][S.color]) S.color=Object.keys(COLORS[S.model])[0];
+    if(!SPEC[S.model].cover && S.screen==='cover') S.screen='now';
+    if(!S.menuEdited){ S.menuItems=MENUS[S.model].slice(); S.menuSel=Math.min(S.menuSel,S.menuItems.length-1); $('#menuItems').value=S.menuItems.join('\n'); }
+    paintChips(); paintColorSwatches(); render();
+  });
+  document.querySelectorAll('#screenChips .chip').forEach(c=>c.onclick=()=>{ if(c.disabled) return; S.screen=c.dataset.screen; paintChips(); render(); });
+  document.querySelectorAll('#cfBgChips .chip').forEach(c=>c.onclick=()=>{ S.cfBg=c.dataset.cfbg; paintChips(); render(); });
+  document.querySelectorAll('#artChips .chip').forEach(c=>c.onclick=()=>{
+    const s=curSong(); s.mode=c.dataset.art;
+    if(s.mode==='grad') s.img='';
+    $('#artSrc').value = s.mode==='url' ? s.img : '';
+    paintChips(); paintSongs(); render();
+  });
+  document.querySelectorAll('#bgChips .chip').forEach(c=>c.onclick=()=>{ S.bg.mode=c.dataset.bg; paintChips(); render(); });
+
+  $('#scale').oninput=e=>{ S.scale=e.target.value/100; $('#scaleV').textContent=e.target.value+'%'; render(); };
+  $('#caseOn').onchange=e=>{ S.caseOn=e.target.checked; render(); };
+  $('#glare').onchange=e=>{ S.glare=e.target.checked; render(); };
+  $('#engrave').oninput=e=>{ S.engrave=e.target.value; render(); };
+  $('#batt').oninput=e=>{ S.batt=+e.target.value; $('#battV').textContent=e.target.value+'%'; render(); };
+  $('#playing').onchange=e=>{ S.playing=e.target.checked; render(); };
+
+  $('#sTitle').oninput=e=>{ curSong().t=e.target.value; paintSongs(); render(); };
+  $('#sArtist').oninput=e=>{ curSong().a=e.target.value; paintSongs(); render(); };
+  $('#sAlbum').oninput=e=>{ S.album=e.target.value; render(); };
+  $('#sCur').oninput=e=>{ S.curTime=e.target.value; render(); };
+  $('#sTot').oninput=e=>{ S.totTime=e.target.value; render(); };
+
+  $('#artFile').onchange=e=>{ const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader(); r.onload=()=>{ curSong().img=r.result; curSong().mode='upload'; paintChips(); paintSongs(); render(); }; r.readAsDataURL(f); };
+  $('#artSrc').oninput=e=>{ curSong().img=e.target.value; render(); };
+  $('#artC1').onclick=()=> CP.open($('#artC1'), curSong().c1, (hex)=>{
+    const s=curSong(); s.c1=hex; if(s.solid) s.c2=hex;
+    $('#artC1').style.background=hex;
+    if(s.solid) $('#artC2').style.background=hex;
+    paintSongs(); render();
+  });
+  $('#artC2').onclick=()=>{ if($('#artC2').disabled) return; CP.open($('#artC2'), curSong().c2, (hex)=>{
+    curSong().c2=hex; $('#artC2').style.background=hex; paintSongs(); render();
+  }); };
+  $('#artSolid').onchange=e=>{
+    const s=curSong(); s.solid=e.target.checked;
+    if(s.solid){
+      // 직전에 지정했던 색 2를 기억해뒀다가, 단색 해제 시 그대로 복원
+      s.c2prev = s.c2;
+      s.c2 = s.c1;
+    }else{
+      s.c2 = s.c2prev!=null ? s.c2prev : mix(s.c1,-0.28);
+    }
+    $('#artC2').style.background=s.c2; paintChips(); paintSongs(); render();
+  };
+  $('#artAngle').oninput=e=>{ curSong().angle=+e.target.value; $('#artAV').textContent=e.target.value+'°'; render(); };
+  $('#artEmoji').oninput=e=>{ curSong().emoji=e.target.value; render(); };
+
+  $('#listTitle').oninput=e=>{ S.listTitle=e.target.value; render(); };
+  $('#addSong').onclick=()=>{ S.songs.push({t:'새 곡',a:'아티스트',c1:'#d8dee8',c2:mix('#d8dee8',-0.28),angle:135,emoji:'',img:'',mode:'grad',solid:false,c2prev:null}); paintSongs(); render(); };
+
+  $('#menuTitle').oninput=e=>{ S.menuTitle=e.target.value; render(); };
+  $('#menuItems').oninput=e=>{
+    S.menuEdited=true;
+    S.menuItems=e.target.value.split('\n').filter(v=>v.trim()!=='');
+    if(!S.menuItems.length) S.menuItems=[' '];
+    S.menuSel=Math.min(S.menuSel,S.menuItems.length-1); render();
+  };
+  $('#menuSel').oninput=e=>{ S.menuSel=Math.max(0,Math.min((+e.target.value||1)-1, S.menuItems.length-1)); render(); };
+
+  $('#bgC1').onclick=()=> CP.open($('#bgC1'), S.bg.c1, (hex)=>{ S.bg.c1=hex; $('#bgC1').style.background=hex; render(); });
+  $('#bgC2').onclick=()=> CP.open($('#bgC2'), S.bg.c2, (hex)=>{ S.bg.c2=hex; $('#bgC2').style.background=hex; render(); });
+  $('#bgFile').onchange=e=>{ const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader(); r.onload=()=>{ S.bg.src=r.result; S.bg.mode='img'; paintChips(); render(); }; r.readAsDataURL(f); };
+  $('#shadow').onchange=e=>{ S.shadow=e.target.checked; render(); };
+
+  $('#savePng').onclick=savePng;
+}
+async function savePng(){
+  if(typeof html2canvas==='undefined'){
+    alert('PNG 저장 라이브러리(html2canvas)를 불러오지 못했습니다.\n인터넷 연결이나 스크립트 차단 여부를 확인해 주세요.');
+    return;
+  }
+  const btn=$('#savePng'), old=btn.textContent;
+  btn.textContent='만드는 중...'; btn.disabled=true;
+  try{
+    const canvas=await html2canvas($('#stage'),{scale:+$('#dpr').value,useCORS:true,allowTaint:false,backgroundColor:null,logging:false});
+    const a=document.createElement('a');
+    a.download=`ipod-${S.model}-${Date.now()}.png`;
+    a.href=canvas.toDataURL('image/png');
+    a.click();
+  }catch(err){
+    alert('저장에 실패했습니다. 외부 URL 이미지를 사용 중이라면 업로드 방식으로 변경해 주세요.');
+  }
+  btn.textContent=old; btn.disabled=false;
+}
+
+/* ═══════════════ 초기화 ═══════════════ */
+function init(){
+  $('#sCur').value=S.curTime; $('#sTot').value=S.totTime;
+  $('#listTitle').value=S.listTitle;
+  $('#menuTitle').value=S.menuTitle;
+  $('#menuItems').value=S.menuItems.join('\n');
+  $('#menuSel').value=S.menuSel+1;
+  $('#caseOn').checked=S.caseOn;
+  $('#bgC1').style.background=S.bg.c1; $('#bgC2').style.background=S.bg.c2;
+  syncSongFields(); paintColorSwatches(); paintChips(); bindAll(); render();
+}
+init();
+</script>
+</body>
+</html>
